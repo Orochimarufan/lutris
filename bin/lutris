@@ -69,6 +69,9 @@ parser.add_option("--list-steam-folders", action="store_true",
 parser.add_option("-j", "--json", action="store_true", dest="json",
                   help="Display the list of games in JSON format")
 parser.add_option("--reinstall", action="store_true", help="Reinstall game")
+
+parser.add_option("--gog", action="store_true", help="Test the GOG stuff")  # XXX
+
 (options, args) = parser.parse_args()
 
 if options.debug:
@@ -129,6 +132,18 @@ game = None
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+
+# XXX
+if options.gog:
+    from lutris.gui.dialogs import PlatformConnectDialog
+    from lutris.util.gog import GogService
+
+    gog_service = GogService()
+    dialog = PlatformConnectDialog(gog_service)
+    GObject.threads_init()
+    Gtk.main()
+
+# XXX
 # D-Bus init
 
 bus = dbus.SessionBus()

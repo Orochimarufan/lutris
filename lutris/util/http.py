@@ -28,14 +28,14 @@ class Request(object):
         self.thread_queue = thread_queue
         self.buffer_size = 32 * 1024  # Bytes
         self.downloaded_size = 0
-        self.headers = headers
+        self.headers = headers or {}
 
     def get(self, data=None):
         req = urllib.request.Request(url=self.url, data=data, headers=self.headers)
         try:
             request = urllib.request.urlopen(req, timeout=self.timeout)
         except urllib.error.HTTPError as e:
-            logger.error("Unavailable url (%s): %s", self.url, e)
+            logger.error("Request to %s returned code %s", self.url, e.code)
         except (socket.timeout, urllib.error.URLError) as e:
             logger.error("Unable to connect to server (%s): %s", self.url, e)
         else:

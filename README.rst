@@ -12,14 +12,13 @@ The games can be installed anywhere you want on your system, the tool
 does not impose anything.
 
 Lutris relies on various programs referenced as 'runners' to provide a
-vast library of games. These runners (with the exception of Steam,Desura
+vast library of games. These runners (with the exception of Steam
 and Web browsers) are provided by lutris, you don't need to install them
 with your package manager.
 We currently support the following runners:
 
 * Linux (Native games)
 * Steam
-* Desura (Experimental support)
 * Web browser
 * Wine
 * Wine + Steam

@@ -1,5 +1,7 @@
 import os
 from lutris.runners.runner import Runner
+from lutris.util.libretro import RetroConfig
+from lutris.util import system
 from lutris import settings
 
 
@@ -32,12 +34,21 @@ def get_cores():
     ]
 
 
+def get_default_config_path():
+    return os.path.join(settings.RUNNER_DIR, 'retroarch/retroarch.cfg')
+
+
+def get_default_assets_directory():
+    return os.path.join(settings.RUNNER_DIR, 'retroarch/assets')
+
+
 class libretro(Runner):
     human_name = "libretro"
     description = "Multi system emulator"
     platform = "libretro"
     runnable_alone = True
     runner_executable = 'retroarch/retroarch'
+
     game_options = [
         {
             'option': 'main_file',
@@ -58,6 +69,12 @@ class libretro(Runner):
             'type': 'bool',
             'label': 'Fullscreen',
             'default': True
+        },
+        {
+            'option': 'config_file',
+            'type': 'file',
+            'label': 'Config file',
+            'default': get_default_config_path()
         }
     ]
 
@@ -90,21 +107,61 @@ class libretro(Runner):
         else:
             super(libretro, self).install(version, downloader, callback)
 
-    def play(self):
-        command = [self.get_executable()]
+    def get_run_data(self):
+        self.prelaunch()
+        return {
+            'command': [self.get_executable()] + self.get_runner_parameters()
+        }
 
+    def get_config_file(self):
+        return self.runner_config.get('config_file') or get_default_config_path()
+
+    def prelaunch(self):
+        config_file = self.get_config_file()
+        if os.path.exists(config_file):
+            retro_config = RetroConfig(config_file)
+
+            # Change assets path to the Lutris provided one if necessary
+            assets_directory = os.path.expanduser(retro_config['assets_directory'])
+            if system.path_is_empty(assets_directory):
+                retro_config['assets_directory'] = get_default_assets_directory()
+                retro_config.save()
+
+    def get_runner_parameters(self):
+        parameters = []
         # Fullscreen
         fullscreen = self.runner_config.get('fullscreen')
         if fullscreen:
-            command.append('--fullscreen')
+            parameters.append('--fullscreen')
+
+        parameters.append('--config={}'.format(self.get_config_file()))
+        return parameters
+
+    def play(self):
+        command = [self.get_executable()]
+
+        command += self.get_runnner_parameters()
 
         # Core
-        core = self.game_config['core']
+        core = self.game_config.get('core')
+        if not core:
+            return {
+                'error': 'CUSTOM',
+                'text': "No core has been selected for this game"
+            }
         command.append('--libretro={}'.format(self.get_core_path(core)))
 
         # Main file
         file = self.game_config.get('main_file')
-        if file:
-            command.append(file)
-
+        if not file:
+            return {
+                'error': 'CUSTOM',
+                'text': 'No game file specified'
+            }
+        if not os.path.exists(file):
+            return {
+                'error': 'FILE_NOT_FOUND',
+                'file': file
+            }
+        command.append(file)
         return {'command': command}

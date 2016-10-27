@@ -10,16 +10,43 @@ import traceback
 from lutris.util.log import logger
 
 
+TERMINAL_CANDIDATES = [
+    'xterm',
+    'gnome-terminal',
+    'konsole',
+    'xfce4-terminal',
+    'pantheon-terminal',
+    'terminator',
+    'urxvt',
+    'cool-retro-term',
+    'Eterm',
+    'guake',
+    'lilyterm',
+    'lxterminal',
+    'roxterm',
+    'rxvt',
+    'aterm',
+    'sakura',
+    'st',
+    'terminology',
+    'termite',
+    'wterm',
+    'yuakuake',
+]
+
+INSTALLED_TERMINALS = []
+
 is_64bit = sys.maxsize > 2**32
 
 
-def execute(command, env=None, cwd=None, log_errors=False):
+def execute(command, env=None, cwd=None, log_errors=False, quiet=False):
     """Execute a system command and return its results."""
     existing_env = os.environ.copy()
     if env:
         existing_env.update(env)
         logger.debug(' '.join('{}={}'.format(k, v) for k, v in env.items()))
-    logger.debug("Executing %s", ' '.join(command))
+    if not quiet:
+        logger.debug("Executing %s", ' '.join(command))
 
     # Piping stderr can cause slowness in the programs, use carefully
     # (especially when using regedit with wine)
@@ -59,10 +86,10 @@ def get_md5_hash(filename):
     return md5.hexdigest()
 
 
-def find_executable(exec_name):
+def find_executable(exec_name, quiet=False):
     if not exec_name:
         raise ValueError("find_executable: exec_name required")
-    return execute(['which', exec_name])
+    return execute(['which', exec_name], quiet=quiet)
 
 
 def get_pid(program, multiple=False):
@@ -220,18 +247,13 @@ def get_pids_using_file(path):
 
 
 def get_terminal_apps():
-    candidates = [
-        'aterm', 'cool-retro-term', 'Eterm',
-        'gnome-terminal', 'guake', 'konsole', 'lilyterm', 'lxterminal',
-        'pantheon-terminal', 'roxterm', 'rxvt', 'sakura', 'st', 'terminator',
-        'terminology', 'termite', 'urxvt', 'wterm', 'xfce4-terminal', 'xterm',
-        'yuakuake',
-    ]
-    installed_terms = []
-    for exe in candidates:
-        if find_executable(exe):
-            installed_terms.append(exe)
-    return installed_terms
+    if INSTALLED_TERMINALS:
+        return INSTALLED_TERMINALS
+    else:
+        for exe in TERMINAL_CANDIDATES:
+            if find_executable(exe, quiet=True):
+                INSTALLED_TERMINALS.append(exe)
+    return INSTALLED_TERMINALS
 
 
 def get_default_terminal():
@@ -257,6 +279,13 @@ def path_exists(path):
     if not path:
         return False
     return os.path.exists(path)
+
+
+def path_is_empty(path):
+    """Return True is the given path doen't exist or it is an empty directory"""
+    if not path_exists(path):
+        return True
+    return len(os.listdir(path)) == 0
 
 
 def stacktrace():

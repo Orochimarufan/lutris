@@ -11,7 +11,7 @@ from lutris.game import Game
 from lutris.sync import sync_from_remote
 from lutris.runtime import RuntimeUpdater
 
-from lutris.util import display, resources
+from lutris.util import resources
 from lutris.util.log import logger
 from lutris.util.jobs import AsyncCall
 from lutris.util import http
@@ -292,12 +292,12 @@ class LutrisWindow(Gtk.Application):
     def switch_splash_screen(self):
         if len(self.game_list) == 0:
             self.splash_box.show()
+            self.sidebar_paned.hide()
             self.games_scrollwindow.hide()
-            self.show_sidebar(force_hide=True)
         else:
             self.splash_box.hide()
+            self.sidebar_paned.show()
             self.games_scrollwindow.show()
-            self.show_sidebar()
 
     def switch_view(self, view_type):
         """Switch between grid view and list view."""
@@ -351,8 +351,8 @@ class LutrisWindow(Gtk.Application):
             self.set_status("")
 
     def update_runtime(self):
-        cancellables = self.runtime_updater.update(self.set_status)
-        self.threads_stoppers += cancellables
+        self.runtime_updater.update(self.set_status)
+        self.threads_stoppers += self.runtime_updater.cancellables
 
     def sync_icons(self):
         resources.fetch_icons([game['slug'] for game in self.game_list],
@@ -374,11 +374,9 @@ class LutrisWindow(Gtk.Application):
                 self.set_status("Preparing to launch %s" % name)
             elif self.running_game.state == self.running_game.STATE_STOPPED:
                 self.set_status("Game has quit")
-                display.set_cursor('default', self.window.get_window())
                 self.stop_button.set_sensitive(False)
             elif self.running_game.state == self.running_game.STATE_RUNNING:
                 self.set_status("Playing %s" % name)
-                display.set_cursor('default', self.window.get_window())
                 self.stop_button.set_sensitive(True)
         for index in range(4):
             self.joystick_icons.append(
@@ -539,7 +537,6 @@ class LutrisWindow(Gtk.Application):
             game_id = self._get_current_game_id()
         if not game_id:
             return
-        display.set_cursor('wait', self.window.get_window())
         self.running_game = Game(game_id)
         if self.running_game.is_installed:
             self.running_game.play()
@@ -563,7 +560,6 @@ class LutrisWindow(Gtk.Application):
             logger.debug("Installing game %s (%s)" % (game_ref, game_id))
         if not game_ref:
             return
-        display.set_cursor('wait', self.window.get_window())
         InstallerDialog(game_ref, self)
 
     def game_selection_changed(self, _widget):
@@ -741,11 +737,9 @@ class LutrisWindow(Gtk.Application):
             settings.write_setting('sidebar_visible', 'false')
         self.show_sidebar()
 
-    def show_sidebar(self, force_hide=None):
-        if self.sidebar_visible and force_hide is not True:
-            self.sidebar_paned.set_position(150)
-        else:
-            self.sidebar_paned.set_position(0)
+    def show_sidebar(self):
+        width = 150 if self.sidebar_visible else 0
+        self.sidebar_paned.set_position(width)
 
     def on_sidebar_changed(self, widget):
         self.selected_runner = widget.get_selected_runner()

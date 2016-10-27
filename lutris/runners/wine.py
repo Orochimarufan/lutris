@@ -1,4 +1,5 @@
 import os
+import time
 import shlex
 import subprocess
 
@@ -10,6 +11,7 @@ from lutris.config import LutrisConfig
 from lutris.util import datapath, display, system
 from lutris.util.log import logger
 from lutris.util.strings import version_sort
+from lutris.util.wineprefix import WinePrefixManager
 from lutris.runners.runner import Runner
 from lutris.thread import LutrisThread
 from lutris.gui.dialogs import FileDialog
@@ -82,13 +84,16 @@ def create_prefix(prefix, wine_path=None, arch='win32'):
         'WINEPREFIX': prefix
     }
     system.execute([wineboot_path], env=env)
-    if not os.path.exists(os.path.join(prefix, 'system.reg')):
-        logger.error('No system.reg found after prefix creation. '
+    for i in range(20):
+        time.sleep(.25)
+        if os.path.exists(os.path.join(prefix, 'user.reg')):
+            break
+    if not os.path.exists(os.path.join(prefix, 'user.reg')):
+        logger.error('No user.reg found after prefix creation. '
                      'Prefix might not be valid')
     logger.info('%s Prefix created in %s', arch, prefix)
-
-    if prefix:
-        disable_desktop_integration(prefix)
+    prefix_manager = WinePrefixManager(prefix)
+    prefix_manager.setup_defaults()
 
 
 def wineexec(executable, args="", wine_path=None, prefix=None, arch=None,
@@ -674,6 +679,8 @@ class wine(Runner):
         """Reset regedit keys according to config."""
         prefix = self.prefix_path
         enable_wine_desktop = False
+        prefix_manager = WinePrefixManager(prefix)
+
         for key, path in self.reg_keys.items():
             value = self.runner_config.get(key) or 'auto'
             if not value or value == 'auto' and key != 'ShowCrashDialog':
@@ -682,27 +689,24 @@ class wine(Runner):
             elif key in self.runner_config:
                 if key == 'Desktop' and value is True:
                     enable_wine_desktop = True
+                    continue
+                elif key == 'ShowCrashDialog':
+                    prefix_manager.set_crash_dialogs(value)
+                    continue
                 else:
-                    if key == 'ShowCrashDialog':
-                        if value is True:
-                            value = '00000001'
-                        else:
-                            value = '00000000'
-                        type = 'REG_DWORD'
-                    else:
-                        type = 'REG_SZ'
-                    set_regedit(path, key, value, type=type,
-                                wine_path=self.get_executable(), prefix=prefix,
-                                arch=self.wine_arch)
+                    type = 'REG_SZ'
+                set_regedit(path, key, value, type=type,
+                            wine_path=self.get_executable(), prefix=prefix,
+                            arch=self.wine_arch)
         self.set_wine_desktop(enable_wine_desktop)
         overrides = self.runner_config.get('overrides') or {}
-        overrides_path = "%s\DllOverrides" % self.reg_prefix
         for dll, value in overrides.items():
-            set_regedit(overrides_path, dll, value,
-                        wine_path=self.get_executable(),
-                        prefix=prefix, arch=self.wine_arch)
+            prefix_manager.override_dll(dll, value)
 
     def prelaunch(self):
+        prefix_manager = WinePrefixManager(self.prefix_path)
+        prefix_manager.setup_defaults()
+        prefix_manager.configure_joypads()
         self.set_regedit_keys()
         return True
 

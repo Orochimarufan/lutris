@@ -10,7 +10,7 @@ from lutris.util.log import logger
 
 class Request(object):
     def __init__(self, url, timeout=5, stop_request=None,
-                 thread_queue=None, headers={}):
+                 thread_queue=None, headers=None, cookies=None):
 
         if not url:
             raise ValueError('An URL is required!')
@@ -29,11 +29,19 @@ class Request(object):
         self.buffer_size = 32 * 1024  # Bytes
         self.downloaded_size = 0
         self.headers = headers or {}
+        if cookies:
+            cookie_processor = urllib.request.HTTPCookieProcessor(cookies)
+            self.opener = urllib.request.build_opener(cookie_processor)
+        else:
+            self.opener = None
 
     def get(self, data=None):
         req = urllib.request.Request(url=self.url, data=data, headers=self.headers)
         try:
-            request = urllib.request.urlopen(req, timeout=self.timeout)
+            if self.opener:
+                request = self.opener.open(req, timeout=self.timeout)
+            else:
+                request = urllib.request.urlopen(req, timeout=self.timeout)
         except urllib.error.HTTPError as e:
             logger.error("Request to %s returned code %s", self.url, e.code)
         except (socket.timeout, urllib.error.URLError) as e:
@@ -67,6 +75,7 @@ class Request(object):
                     break
             request.close()
             self.content = b''.join(chunks)
+            self.info = request.info()
         return self
 
     def post(self, data):

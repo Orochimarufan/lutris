@@ -63,6 +63,7 @@ class ScriptInterpreter(CommandsMixin):
         self.game_name = self.script['name']
         self.game_slug = self.script['game_slug']
         self.requires = self.script.get('requires')
+        self.extends = self.script.get('extends')
         self._check_dependency()
         if self.creates_game_folder:
             self.target_path = self.get_default_target()
@@ -105,8 +106,8 @@ class ScriptInterpreter(CommandsMixin):
             return False
         if self.files:
             return True
-        if self.runner in ('linux', 'wine', 'dosbox'):
-            # Can use 'insert-disc' and have no files
+        command_names = [list(c.keys())[0] for c in self.script.get('installer', [])]
+        if 'insert-disc' in command_names:
             return True
         return False
 
@@ -116,19 +117,26 @@ class ScriptInterpreter(CommandsMixin):
 
     def is_valid(self):
         """Return True if script is usable."""
-        required_fields = ('runner', 'name', 'game_slug')
-        for field in required_fields:
+
+        # Check that installers contains all required fields
+        for field in ('runner', 'name', 'game_slug'):
             if not self.script.get(field):
                 self.errors.append("Missing field '%s'" % field)
+
+        # Check that libretro installers have a core specified
         if self.script.get('runner') == 'libretro':
             if 'game' not in self.script or 'core' not in self.script['game']:
                 self.errors.append('Missing libretro core in game section')
+
+        # Check that installers don't contain both 'requires' and 'extends'
+        if self.script.get('requires') and self.script.get('extends'):
+            self.errors.append('Scripts can\'t have both extends and requires')
         return not bool(self.errors)
 
     def _get_installed_dependency(self, dependency):
         """Return whether a dependency is installed"""
         game = pga.get_game_by_field(dependency, field='installer_slug')
-        # Legacy support of installers using game slug as requirement
+
         if not game:
             game = pga.get_game_by_field(dependency, 'slug')
         if bool(game) and bool(game['directory']):
@@ -141,7 +149,10 @@ class ScriptInterpreter(CommandsMixin):
         The first game available listed in the dependencies is the one picked to base
         the installed on.
         """
-        dependencies = strings.unpack_dependencies(self.requires)
+        if self.extends:
+            dependencies = [self.extends]
+        else:
+            dependencies = strings.unpack_dependencies(self.requires)
         error_message = "You need to install {} before"
         for index, dependency in enumerate(dependencies):
             if isinstance(dependency, tuple):
@@ -472,7 +483,10 @@ class ScriptInterpreter(CommandsMixin):
 
     def _write_config(self):
         """Write the game configuration in the DB and config file."""
-
+        if self.extends:
+            logger.info('This is an extension to %s, not creating a new game entry',
+                        self.extends)
+            return
         configpath = make_game_config_id(self.script['slug'])
         config_filename = os.path.join(settings.CONFIG_DIR, "games/%s.yml" % configpath)
 

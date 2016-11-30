@@ -34,6 +34,13 @@ class GtkBuilderDialog(GObject.Object):
     def on_close(self, *args):
         self.dialog.destroy()
 
+    def on_response(self, widget, response):
+        if response == Gtk.ResponseType.DELETE_EVENT:
+            try:
+                self.dialog.hide()
+            except AttributeError:
+                pass
+
 
 class AboutDialog(GtkBuilderDialog):
     glade_file = 'about-dialog.ui'

@@ -5,7 +5,6 @@ import shutil
 import subprocess
 
 from textwrap import dedent
-from xdg import BaseDirectory
 from gi.repository import GLib
 
 from lutris.util import system
@@ -60,13 +59,7 @@ def get_launcher_path(game_slug, game_id):
     When legacy is set, it will return the old path with only the slug,
     otherwise it will return the path with slug + id
     """
-    xdg_executable = 'xdg-user-dir'
-    if not system.find_executable(xdg_executable):
-        logger.error("%s not found", xdg_executable)
-        return
-    desktop_dir = subprocess.Popen([xdg_executable, 'DESKTOP'],
-                                   stdout=subprocess.PIPE).communicate()[0]
-    desktop_dir = str(desktop_dir).strip()
+    desktop_dir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DESKTOP)
 
     legacy_launcher_path = os.path.join(
         desktop_dir, get_xdg_basename(game_slug, game_id, legacy=True)
@@ -84,7 +77,7 @@ def get_menu_launcher_path(game_slug, game_id):
     """Return the path to a XDG menu launcher, prioritizing legacy paths if
     they exist
     """
-    menu_dir = os.path.join(BaseDirectory.xdg_data_home, 'applications')
+    menu_dir = os.path.join(GLib.get_user_data_dir(), 'applications')
     menu_path = os.path.join(
         menu_dir, get_xdg_basename(game_slug, game_id, legacy=True)
     )

@@ -121,7 +121,6 @@ class LutrisWindow(Gtk.Application):
         # Scroll window
         self.games_scrollwindow = self.builder.get_object('games_scrollwindow')
         self.games_scrollwindow.add(self.view)
-        self.joystick_icons = []
         # Buttons
         self.stop_button = self.builder.get_object('stop_button')
         self.stop_button.set_sensitive(False)
@@ -161,6 +160,7 @@ class LutrisWindow(Gtk.Application):
         # Window initialization
         self.window = self.builder.get_object("window")
         self.window.resize_to_geometry(width, height)
+        self.window.set_default_icon_name('lutris')
         self.window.show_all()
         self.builder.connect_signals(self)
         self.connect_signals()
@@ -343,6 +343,7 @@ class LutrisWindow(Gtk.Application):
 
     def update_existing_games(self, added, updated, first_run=False):
         for game_id in updated.difference(added):
+            # XXX this migth not work if the game has no 'item' set
             self.view.update_row(pga.get_game_by_field(game_id, 'id'))
 
         if first_run:
@@ -378,14 +379,6 @@ class LutrisWindow(Gtk.Application):
             elif self.running_game.state == self.running_game.STATE_RUNNING:
                 self.set_status("Playing %s" % name)
                 self.stop_button.set_sensitive(True)
-        for index in range(4):
-            self.joystick_icons.append(
-                self.builder.get_object('js' + str(index) + 'image')
-            )
-            if os.path.exists("/dev/input/js%d" % index):
-                self.joystick_icons[index].set_visible(True)
-            else:
-                self.joystick_icons[index].set_visible(False)
         return True
 
     # ---------

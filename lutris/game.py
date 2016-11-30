@@ -19,15 +19,18 @@ from lutris.gui import dialogs
 def show_error_message(message):
     """Display an error message based on the runner's output."""
     if "CUSTOM" == message['error']:
-        dialogs.ErrorDialog(message['text'])
+        message_text = message['file'].replace('&', '&amp;')
+        dialogs.ErrorDialog(message_text)
     elif "RUNNER_NOT_INSTALLED" == message['error']:
         dialogs.ErrorDialog('Error the runner is not installed')
     elif "NO_BIOS" == message['error']:
         dialogs.ErrorDialog("A bios file is required to run this game")
     elif "FILE_NOT_FOUND" == message['error']:
-        dialogs.ErrorDialog("The file %s could not be found" % message['file'])
+        message_text = message['file'].replace('&', '&amp;')
+        dialogs.ErrorDialog("The file %s could not be found" % message_text)
     elif "NOT_EXECUTABLE" == message['error']:
-        dialogs.ErrorDialog("The file %s is not executable" % message['file'])
+        message_text = message['file'].replace('&', '&amp;')
+        dialogs.ErrorDialog("The file %s is not executable" % message_text)
 
 
 class Game(object):
@@ -276,7 +279,7 @@ class Game(object):
         if game_ld_libary_path:
             if not ld_library_path:
                 ld_library_path = '$LD_LIBRARY_PATH'
-            ld_library_path = ":".join(game_ld_libary_path, ld_library_path)
+            ld_library_path = ":".join([game_ld_libary_path, ld_library_path])
         env["LD_LIBRARY_PATH"] = ld_library_path
 
         # /Env vars

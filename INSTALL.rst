@@ -7,7 +7,7 @@ Requirements
 Lutris should work on any Gnome system, the following depencies should be
 installed:
 
-    * python == 2.7
+    * python > 3.4
     * python-yaml
     * PyGobject
     * libsoup-gnome
@@ -24,7 +24,7 @@ the following command as root::
 **Warning:** there is no way to cleanly uninstall programs installed with
 setup.py other than manuall deleting the created files. Prefer installing
 Lutris through distribution packages or run it directly from the source
-directory:: 
+directory::
 
     cd /path/to/lutris/source
     ./bin/lutris
@@ -49,7 +49,6 @@ Install required packaging tools::
     yum install @development-tools
     yum install fedora-packager
     yum install python-devel
-    yum install pyxdg
 
 Create a user to build the package with::
 

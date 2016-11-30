@@ -1,4 +1,5 @@
 from lutris import pga
+from lutris.util.log import logger
 from gi.repository import Gtk, GObject, GLib
 from lutris.gui.widgets import get_pixbuf_for_game
 
@@ -82,6 +83,7 @@ class GameFlowBox(FlowBox):
         self.set_valign(Gtk.Align.START)
 
         self.connect('child-activated', self.on_child_activated)
+        self.connect('selected-children-changed', self.on_selection_changed)
 
         self.set_filter_func(self.filter_func)
         self.set_sort_func(self.sort_func)
@@ -153,6 +155,9 @@ class GameFlowBox(FlowBox):
     def on_child_activated(self, widget, child):
         self.emit('game-activated')
 
+    def on_selection_changed(self, widget):
+        self.emit('game-selected')
+
     def get_child(self, game_item):
         for child in self.get_children():
             widget = child.get_children()[0]
@@ -211,7 +216,10 @@ class GameFlowBox(FlowBox):
     def update_image(self, game_id, is_installed):
         for index, game in enumerate(self.game_list):
             if game['id'] == game_id:
-                item = game['item']
+                item = game.get('item')
+                if not item:
+                    logger.error("Couldn't get item for game %s", game)
+                    return
                 item.installed = is_installed
                 item.set_image_pixpuf()
 

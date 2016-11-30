@@ -12,7 +12,7 @@ from lutris.game import Game
 from lutris.gui.config_dialogs import AddGameDialog
 from lutris.gui.dialogs import NoInstallerDialog, DirectoryDialog
 from lutris.gui.widgets import DownloadProgressBox, FileChooserEntry
-from lutris.util import display, jobs
+from lutris.util import jobs
 from lutris.util.log import logger
 from lutris.util.strings import add_url_tags
 
@@ -24,6 +24,7 @@ class InstallerDialog(Gtk.Window):
 
     def __init__(self, game_ref, parent=None):
         Gtk.Window.__init__(self)
+        self.set_default_icon_name('lutris')
         self.interpreter = None
         self.selected_directory = None  # Latest directory chosen by user
         self.parent = parent
@@ -84,6 +85,11 @@ class InstallerDialog(Gtk.Window):
         self.continue_handler = None
 
         self.get_scripts()
+
+        # l33t haxx to make Window.present() actually work.
+        self.set_keep_above(True)
+        self.present()
+        self.set_keep_above(False)
         self.present()
 
     def add_button(self, label, handler=None):
@@ -445,6 +451,11 @@ class InstallerDialog(Gtk.Window):
             self.connect('focus-in-event', self.on_window_focus)
 
     def notify_install_success(self, game_id=None):
+
+        # Nothing to notify in case of extends scripts
+        if self.interpreter.extends:
+            return
+
         game_id = game_id or self.interpreter.game_id
         if self.parent:
             self.parent.view.emit('game-installed', game_id)

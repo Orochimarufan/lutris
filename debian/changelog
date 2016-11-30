@@ -1,3 +1,26 @@
+lutris (0.4.3) yakkety; urgency=medium
+
+  * Change labels in dialogs to "Save"
+  * Disable Lutris runtime by default in Dolphin
+  * Fix typo preventing the Steam Store to be displayed in Wine
+  * Fix path handling for fuser
+  * Fix Wine registry parser for keys with square brackets
+  * Fix Mednafen joystick detection
+  * Fix ld_library_path option
+  * Fix Wine not being displayed in the sidebar
+
+ -- Mathieu Comandon <strycore@gmail.com>  Tue, 29 Nov 2016 13:20:55 -0800
+
+lutris (0.4.2) yakkety; urgency=medium
+
+  * Add suport for 7zip extractors
+  * Python based Wine registry parser
+  * Allow more complex rules for installer dependencies
+  * Fixes in RetroArch runner
+  * Misc bugfixes
+
+ -- Mathieu Comandon <strycore@gmail.com>  Mon, 31 Oct 2016 18:05:14 -0700
+
 lutris (0.4.1) xenial; urgency=medium
 
   * Switch to new versioning scheme

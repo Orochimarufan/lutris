@@ -23,7 +23,7 @@ EXCLUDED_PROCESSES = (
     'bash', 'sh', 'tee', 'tr', 'zenity', 'xkbcomp', 'xboxdrv',
     'steam', 'Steam.exe', 'steamer', 'steamerrorrepor', 'gameoverlayui',
     'SteamService.ex', 'steamwebhelper', 'steamwebhelper.', 'PnkBstrA.exe',
-    'control', 'regedit', 'winecfg.exe', 'wdfmgr.exe',  'wineconsole', 'winedbg'
+    'control', 'winecfg.exe', 'wdfmgr.exe',  'wineconsole', 'winedbg'
 )
 
 
@@ -217,6 +217,7 @@ class LutrisThread(threading.Thread):
 
             num_children += 1
             if child.name in EXCLUDED_PROCESSES:
+                logger.debug("Excluding %s from process monitor" % child.name)
                 continue
             num_watched_children += 1
             logger.debug("{}\t{}\t{}".format(child.pid,
@@ -247,7 +248,7 @@ class LutrisThread(threading.Thread):
                 logger.debug("No children left in thread")
                 self.game_process.communicate()
             else:
-                logger.debug('Some processes are still active')
+                logger.debug('Some processes are still active (%d)', num_children)
             self.return_code = self.game_process.returncode
             return False
         if terminated_children and terminated_children == num_watched_children:

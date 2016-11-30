@@ -620,11 +620,11 @@ class wine(Runner):
 
         return os.path.join(path, version, 'bin/wine')
 
-    def is_installed(self, version=None, any_version=False):
+    def is_installed(self, version=None):
         """Check if Wine is installed.
-        If `any_version` is set to True, checks if any version of wine is available
+        If no version is passed, checks if any version of wine is available
         """
-        if any_version:
+        if not version:
             return len(get_wine_versions()) > 0
         executable = self.get_executable(version)
         if executable:
@@ -704,6 +704,8 @@ class wine(Runner):
             prefix_manager.override_dll(dll, value)
 
     def prelaunch(self):
+        if not os.path.exists(os.path.join(self.prefix_path, 'user.reg')):
+            create_prefix(self.prefix_path, arch=self.wine_arch)
         prefix_manager = WinePrefixManager(self.prefix_path)
         prefix_manager.setup_defaults()
         prefix_manager.configure_joypads()

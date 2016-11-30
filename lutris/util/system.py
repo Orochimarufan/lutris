@@ -223,7 +223,12 @@ def fix_path_case(path):
         if os.path.exists(tested_path):
             current_path = tested_path
             continue
-        for filename in os.listdir(current_path):
+        try:
+            path_contents = os.listdir(current_path)
+        except OSError:
+            logger.error("Can't read contents of %s", current_path)
+            path_contents = []
+        for filename in path_contents:
             if filename.lower() == part.lower():
                 current_path = os.path.join(current_path, filename)
                 continue
@@ -238,12 +243,19 @@ def get_pids_using_file(path):
     if not os.path.exists(path):
         logger.error("No file %s", path)
         return set()
-    fuser_output = []
-    if os.path.exists('/bin/fuser'):
-        fuser_output = execute(["fuser", path])
+    fuser_path = None
+    fuser_output = ""
+    path_candidates = ['/bin', '/sbin', '/usr/bin', '/usr/sbin']
+    for candidate in path_candidates:
+        fuser_path = os.path.join(candidate, 'fuser')
+        if os.path.exists(fuser_path):
+            break
+    if not fuser_path:
+        logger.warning("fuser not available, please install psmisc")
+        return set([])
     else:
-        fuser_output = execute(["/sbin/fuser", path])
-    return set(fuser_output.split())
+        fuser_output = execute([fuser_path, path])
+        return set(fuser_output.split())
 
 
 def get_terminal_apps():

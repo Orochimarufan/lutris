@@ -54,6 +54,8 @@ class winesteam(wine.wine):
     platforms = ['Windows']
     runnable_alone = True
     depends_on = wine.wine
+
+    # ============================= Game Options =============================
     game_options = [
         {
             'option': 'appid',
@@ -71,26 +73,6 @@ class winesteam(wine.wine):
             'help': ("Command line arguments used when launching the game")
         },
         {
-            'option': 'prefix',
-            'type': 'directory_chooser',
-            'label': 'Prefix',
-            'help': ("The prefix (also named \"bottle\") used by Wine.\n"
-                     "It's a directory containing a set of files and "
-                     "folders making up a confined Windows environment.")
-        },
-        {
-            'option': 'arch',
-            'type': 'choice',
-            'label': 'Prefix architecture',
-            'choices': [('Auto', 'auto'),
-                        ('32-bit', 'win32'),
-                        ('64-bit', 'win64')],
-            'default': 'auto',
-            'help': ("The architecture of the Windows environment.\n"
-                     "32-bit is recommended unless running "
-                     "a 64-bit only game.")
-        },
-        {
             'option': 'nolaunch',
             'type': 'bool',
             'default': False,
@@ -98,46 +80,40 @@ class winesteam(wine.wine):
             'help': ("Opens Steam with the current settings without running the game, "
                      "useful if a game has several launch options.")
         }
+    ] + wine.wine.game_options[3:] # exe, args and working_dir are determined by steam.
 
-    ]
+    # ============================= WineSteam Options =============================
+    runner_options = [
+        {
+            'option': 'steam_path',
+            'type': 'directory_chooser',
+            'label': 'Custom Steam location',
+            'help': ("Choose a folder containing Steam.exe\n"
+                     "By default, Lutris will look for a Windows Steam "
+                     "installation into ~/.wine or will install it in "
+                     "its own custom Wine prefix.")
+        },
+        {
+            'option': 'quit_steam_on_exit',
+            'label': "Stop Steam after game exits",
+            'type': 'bool',
+            'default': True,
+            'help': ("Shut down Steam after the game has quit.")
+        },
+        {
+            'option': 'args',
+            'type': 'string',
+            'label': 'Arguments',
+            'advanced': True,
+            'help': ("Extra command line arguments used when "
+                     "launching Steam")
+        },
+    ] + wine.wine.runner_options
 
     def __init__(self, config=None):
         super(winesteam, self).__init__(config)
         self.own_game_remove_method = "Remove game data (through Wine Steam)"
         self.no_game_remove_warning = True
-        self.runner_options.insert(
-            0,
-            {
-                'option': 'steam_path',
-                'type': 'directory_chooser',
-                'label': 'Custom Steam location',
-                'help': ("Choose a folder containing Steam.exe\n"
-                         "By default, Lutris will look for a Windows Steam "
-                         "installation into ~/.wine or will install it in "
-                         "its own custom Wine prefix.")
-            },
-        )
-        self.runner_options.insert(
-            1,
-            {
-                'option': 'quit_steam_on_exit',
-                'label': "Stop Steam after game exits",
-                'type': 'bool',
-                'default': True,
-                'help': ("Shut down Steam after the game has quit.")
-            },
-        )
-        self.runner_options.insert(
-            2,
-            {
-                'option': 'args',
-                'type': 'string',
-                'label': 'Arguments',
-                'advanced': True,
-                'help': ("Extra command line arguments used when "
-                         "launching Steam")
-            },
-        )
 
     def __repr__(self):
         return "Winesteam runner (%s)" % self.config
@@ -154,6 +130,10 @@ class winesteam(wine.wine):
                 arch=self.game_config.get('arch')
             )
         return os.path.expanduser(_prefix)
+
+    def get_prefix_path(self):
+        return os.path.expanduser(self.game_config.get('prefix') or \
+            self.get_default_prefix(arch=self.game_config.get('arch')))
 
     @property
     def browse_dir(self):
@@ -219,11 +199,11 @@ class winesteam(wine.wine):
         """Return Steam exe's path"""
         custom_path = self.runner_config.get('steam_path') or ''
         if custom_path:
-            custom_path = os.path.join(custom_path, 'Steam.exe')
+            custom_path = os.path.join(os.path.expanduser(custom_path), 'Steam.exe')
             if os.path.exists(custom_path):
                 return custom_path
 
-        candidates = [self.get_default_prefix(), os.path.expanduser("~/.wine")]
+        candidates = [self.get_prefix_path(), self.get_default_prefix(), os.path.expanduser("~/.wine")]
         for prefix in candidates:
             # Try the default install path
             steam_path = os.path.join(prefix,
@@ -279,7 +259,7 @@ class winesteam(wine.wine):
             logger.warning('wine is not installed')
             return False
         steam_path = self.get_steam_path()
-        if not steam_path or not os.path.exists(self.get_default_prefix()):
+        if not steam_path or not (os.path.exists(self.get_prefix_path())):
             return False
         return os.path.exists(steam_path)
 

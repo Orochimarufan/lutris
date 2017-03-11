@@ -13,7 +13,7 @@ from lutris.util.process import Process
 from lutris.util import system
 from lutris.util.log import logger
 from lutris.util.steam import (get_app_state_log, get_path_from_appmanifest,
-                               read_config)
+                               read_config, vdf_parse)
 from lutris.util.wineregistry import WineRegistry
 
 # Redefine wine installer tasks
@@ -291,15 +291,26 @@ class winesteam(wine.wine):
 
     def get_steamapps_dirs(self):
         """Return a list of the Steam library main + custom folders."""
-        dirs = []
+        dirs = set()
         # Main steamapps dir
         steam_data_dir = self.steam_data_dir
         if steam_data_dir:
             main_dir = os.path.join(steam_data_dir, 'steamapps')
             main_dir = system.fix_path_case(main_dir)
             if main_dir and os.path.isdir(main_dir):
-                dirs.append(main_dir)
+                dirs.add(main_dir)
         # Custom dirs
+                libsvdf = os.path.join(main_dir, "libraryfolders.vdf")
+                if os.path.exists(libsvdf):
+                    with open(libsvdf, "r") as f:
+                        content = vdf_parse(f, {})
+                    windows_paths = {k: v for k, v in content["LibraryFolders"].items() if k.isdigit()}.values()
+                    for path in windows_paths:
+                        linux_path = self.parse_wine_path(path, self.prefix_path) + "/steamapps"
+                        linux_path = system.fix_path_case(linux_path)
+                        if linux_path and os.path.isdir(linux_path):
+                            dirs.add(linux_path)
+        # Custom dirs, alt.
         steam_config = self.get_steam_config()
         if steam_config:
             i = 1
@@ -308,9 +319,9 @@ class winesteam(wine.wine):
                 linux_path = self.parse_wine_path(path, self.prefix_path)
                 linux_path = system.fix_path_case(linux_path)
                 if linux_path and os.path.isdir(linux_path):
-                    dirs.append(linux_path)
+                    dirs.add(linux_path)
                 i += 1
-        return dirs
+        return list(dirs)
 
     def get_default_steamapps_path(self):
         steamapps_paths = self.get_steamapps_dirs()

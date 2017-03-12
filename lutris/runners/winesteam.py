@@ -125,15 +125,15 @@ class winesteam(wine.wine):
     @property
     def prefix_path(self):
         _prefix = \
-            self.game_config.get('prefix') or \
+            self.runner_config.get('prefix') or \
             self.get_or_create_default_prefix(
-                arch=self.game_config.get('arch')
+                arch=self.runner_config.get('arch')
             )
         return os.path.expanduser(_prefix)
 
     def get_prefix_path(self):
-        return os.path.expanduser(self.game_config.get('prefix') or \
-            self.get_default_prefix(arch=self.game_config.get('arch')))
+        return os.path.expanduser(self.runner_config.get('prefix') or \
+            self.get_default_prefix(arch=self.runner_config.get('arch')))
 
     @property
     def browse_dir(self):

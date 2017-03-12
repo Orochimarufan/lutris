@@ -444,26 +444,6 @@ class wine(Runner):
                      "By default, Lutris uses the directory of the "
                      "executable.")
         },
-        {
-            'option': 'prefix',
-            'type': 'directory_chooser',
-            'label': 'Wine prefix',
-            'help': ("The prefix (also named \"bottle\") used by Wine.\n"
-                     "It's a directory containing a set of files and "
-                     "folders making up a confined Windows environment.")
-        },
-        {
-            'option': 'arch',
-            'type': 'choice',
-            'label': 'Prefix architecture',
-            'choices': [('Auto', 'auto'),
-                        ('32-bit', 'win32'),
-                        ('64-bit', 'win64')],
-            'default': 'auto',
-            'help': ("The architecture of the Windows environment.\n"
-                     "32-bit is recommended unless running "
-                     "a 64-bit only game.")
-        },
     ]
 
     # ============================= Wine Options =============================
@@ -484,6 +464,26 @@ class wine(Runner):
             'type': 'file',
             'help': ('The Wine executable to be used if you have '
                      'selected "Custom" as the Wine version.')
+        },
+        {
+            'option': 'prefix',
+            'type': 'directory_chooser',
+            'label': 'Wine prefix',
+            'help': ("The prefix (also named \"bottle\") used by Wine.\n"
+                     "It's a directory containing a set of files and "
+                     "folders making up a confined Windows environment.")
+        },
+        {
+            'option': 'arch',
+            'type': 'choice',
+            'label': 'Prefix architecture',
+            'choices': [('Auto', 'auto'),
+                        ('32-bit', 'win32'),
+                        ('64-bit', 'win64')],
+            'default': 'auto',
+            'help': ("The architecture of the Windows environment.\n"
+                     "32-bit is recommended unless running "
+                     "a 64-bit only game.")
         },
         {
             'option': 'xinput',
@@ -677,7 +677,7 @@ class wine(Runner):
 
     @property
     def prefix_path(self):
-        prefix_path = self.game_config.get('prefix', '')
+        prefix_path = self.runner_config.get('prefix', '')
         if not prefix_path:
             prefix_path = os.environ.get('WINEPREFIX', '')
         return os.path.expanduser(prefix_path)
@@ -706,7 +706,7 @@ class wine(Runner):
         """Return the wine architecture.
 
         Get it from the config or detect it from the prefix"""
-        arch = self.game_config.get('arch') or 'auto'
+        arch = self.runner_config.get('arch') or 'auto'
         if arch not in ('win32', 'win64'):
             arch = detect_prefix_arch(self.prefix_path) or 'win32'
         return arch

@@ -673,6 +673,11 @@ class wine(Runner):
     def __init__(self, config=None):
         super(wine, self).__init__(config=config)
 
+        # FIXME: This should really be done after the Manage versions dialog is closed
+        version_option = self.runner_options[0]
+        version_option["choices"] = get_wine_version_choices()
+        version_option["default"] = get_default_version()
+
         self.create_context_menu()
 
     @property
